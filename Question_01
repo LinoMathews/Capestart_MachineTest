@@ -1,0 +1,21 @@
+from pyspark.sql.functions import *
+
+//Reading the file and creating the dataframe
+file_location = "/FileStore/tables/U_S__Chronic_Disease_Indicators__CDI_.csv"
+file_type = "csv"
+
+infer_schema = "false"
+first_row_is_header = "true"
+delimiter = ","
+
+df = spark.read.format(file_type) \
+  .option("inferSchema", infer_schema) \
+  .option("header", first_row_is_header) \
+  .option("sep", delimiter) \
+  .load(file_location)
+  
+//Register the df as view
+df.createOrReplaceTempView("data")
+
+//Creating the table as loading the data 
+sqlContext.sql("create table mytable as select * from data");
