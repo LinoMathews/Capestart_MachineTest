@@ -1,0 +1,29 @@
+from pyspark.sql.functions import *
+
+//Reading the file and creating the dataframe
+file_location = "/FileStore/tables/articles-2.csv"
+file_type = "csv"
+
+infer_schema = "false"
+first_row_is_header = "true"
+delimiter = ","
+
+df = spark.read.format(file_type) \
+  .option("inferSchema", infer_schema) \
+  .option("header", first_row_is_header) \
+  .option("sep", delimiter) \
+  .load(file_location)
+
+
+//Removing the html related tags
+df_wo_html = df.withColumn('Article_Description', regexp_replace('Article_Description', '<p>', '')).withColumn('Full_Article', regexp_replace('Full_Article', '<p>', '')).withColumn('Article_Description', regexp_replace('Article_Description', '</p>', '')).withColumn('Full_Article', regexp_replace('Full_Article', '</p>', '')).withColumn('Article_Description', regexp_replace('Article_Description', '&nbsp', '')).withColumn('Full_Article', regexp_replace('Full_Article', '&nbsp', ''))
+
+//Merging the columns and creating the new column
+df_merged = df_wo_html.withColumn('Preprocessed_Text',concat(col('Heading'),lit(' '), col('Article_Description'),lit(' '),col('Full_Article')))
+
+
+//removing the stopwords 
+df_remove_stopwords = df_merged.withColumn("Preprocessed_Text", regexp_replace(sf.col("Preprocessed_Text"), "[\$#,:-;.]", ""))
+
+//removing the leading and trailing spaces
+df_remove_leading_and_trailing = df_remove_stopwords.withColumn('Preprocessed_Text',ltrim('Preprocessed_Text')).withColumn('Preprocessed_Text', rtrim('Preprocessed_Text'))
